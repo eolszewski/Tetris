@@ -1,104 +1,149 @@
 package DragAndDrop;
-import java.awt.FlowLayout;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.io.IOException;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.TransferHandler;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 
-public class NameSlot extends JLabel implements DropTargetListener {
-    NameSlot(final String name) {
-        super(name);
-        new DropTarget(this, this);
-        this.setTransferHandler(new TransferHandler("text"));
-        final MouseListener listener = new MouseAdapter() {
-            @Override
-            public void mousePressed(final MouseEvent me) {
-                final JLabel comp = (JLabel) me.getSource();
-                System.out.println(comp);
+public class NameSlot extends JLayeredPane {
+    public static final int WIDTH = 680;
+    public static final int HEIGHT = 480;
+    private static final int GRID_ROWS = 8;
+    private static final int GRID_COLS = 6;
+    private static final int GAP = 3;
+    private static final Dimension LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
+    private static final Dimension LABEL_SIZE = new Dimension(60, 40);
+    private GridLayout gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, GAP, GAP);
+    private JPanel backingPanel = new JPanel(gridlayout);
+    private JPanel[][] panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
+    private JLabel redLabel = new JLabel("Red", SwingConstants.CENTER);
+    private JLabel blueLabel = new JLabel("Blue", SwingConstants.CENTER);
 
-                final TransferHandler handler = comp.getTransferHandler();
-                handler.exportAsDrag(comp, me, TransferHandler.COPY);
+    public NameSlot() {
+        backingPanel.setSize(LAYERED_PANE_SIZE);
+        backingPanel.setLocation(2 * GAP, 2 * GAP);
+        backingPanel.setBackground(Color.black);
+        for (int row = 0; row < GRID_ROWS; row++) {
+            for (int col = 0; col < GRID_COLS; col++) {
+                panelGrid[row][col] = new JPanel(new GridBagLayout());
+                backingPanel.add(panelGrid[row][col]);
             }
-        };
-        this.addMouseListener(listener);
-    }
-
-    @Override
-    public void dragEnter(final DropTargetDragEvent dtde) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void dragExit(final DropTargetEvent dte) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void dragOver(final DropTargetDragEvent dtde) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void drop(final DropTargetDropEvent dtde) {
-
-        // DropTarget dt = (DropTarget) dtde.getSource();
-        // NameSlot ns = (NameSlot) dt.getComponent();
-
-        try {
-            final String s = (String) dtde.getTransferable().getTransferData(
-                    new DataFlavor("application/x-java-jvm-local-objectref; class=java.lang.String"));
-
-            System.out.println("drop detected from " + s + " to " + this.getText());
-        }
-        catch (final UnsupportedFlavorException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        catch (final IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        catch (final ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         }
 
+        redLabel.setOpaque(true);
+        redLabel.setBackground(Color.red.brighter().brighter());
+        redLabel.setPreferredSize(LABEL_SIZE);
+        panelGrid[4][3].add(redLabel);
+
+        blueLabel.setOpaque(true);
+        blueLabel.setBackground(Color.blue.brighter().brighter());
+        blueLabel.setPreferredSize(LABEL_SIZE);
+        panelGrid[1][1].add(blueLabel);
+
+        backingPanel.setBorder(BorderFactory.createEmptyBorder(GAP, GAP, GAP, GAP));
+        setPreferredSize(LAYERED_PANE_SIZE);
+        add(backingPanel, JLayeredPane.DEFAULT_LAYER);
+        MyMouseAdapter myMouseAdapter = new MyMouseAdapter();
+        addMouseListener(myMouseAdapter);
+        addMouseMotionListener(myMouseAdapter);
     }
 
-    @Override
-    public void dropActionChanged(final DropTargetDragEvent dtde) {
-        // TODO Auto-generated method stub
+    private class MyMouseAdapter extends MouseAdapter {
+        private JLabel dragLabel = null;
+        private int dragLabelWidthDiv2;
+        private int dragLabelHeightDiv2;
+        private JPanel clickedPanel = null;
 
+        @Override
+        public void mousePressed(MouseEvent me) {
+            clickedPanel = (JPanel) backingPanel.getComponentAt(me.getPoint());
+            Component[] components = clickedPanel.getComponents();
+            if (components.length == 0) {
+                return;
+            }
+            // if we click on jpanel that holds a jlabel
+            if (components[0] instanceof JLabel) {
+
+                // remove label from panel
+                dragLabel = (JLabel) components[0];
+                clickedPanel.remove(dragLabel);
+                clickedPanel.revalidate();
+                clickedPanel.repaint();
+
+                dragLabelWidthDiv2 = dragLabel.getWidth() / 2;
+                dragLabelHeightDiv2 = dragLabel.getHeight() / 2;
+
+                int x = me.getPoint().x - dragLabelWidthDiv2;
+                int y = me.getPoint().y - dragLabelHeightDiv2;
+                dragLabel.setLocation(x, y);
+                add(dragLabel, JLayeredPane.DRAG_LAYER);
+                repaint();
+            }
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent me) {
+            if (dragLabel == null) {
+                return;
+            }
+            int x = me.getPoint().x - dragLabelWidthDiv2;
+            int y = me.getPoint().y - dragLabelHeightDiv2;
+            dragLabel.setLocation(x, y);
+            repaint();
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent me) {
+            if (dragLabel == null) {
+                return;
+            }
+            remove(dragLabel); // remove dragLabel for drag layer of JLayeredPane
+            JPanel droppedPanel = (JPanel) backingPanel.getComponentAt(me.getPoint());
+            if (droppedPanel == null) {
+                // if off the grid, return label to home
+                clickedPanel.add(dragLabel);
+                clickedPanel.revalidate();
+            } else {
+                int r = -1;
+                int c = -1;
+                searchPanelGrid: for (int row = 0; row < panelGrid.length; row++) {
+                    for (int col = 0; col < panelGrid[row].length; col++) {
+                        if (panelGrid[row][col] == droppedPanel) {
+                            r = row;
+                            c = col;
+                            break searchPanelGrid;
+                        }
+                    }
+                }
+
+                if (r == -1 || c == -1) {
+                    // if off the grid, return label to home
+                    clickedPanel.add(dragLabel);
+                    clickedPanel.revalidate();
+                } else {
+                    droppedPanel.add(dragLabel);
+                    droppedPanel.revalidate();
+                }
+            }
+
+            repaint();
+            dragLabel = null;
+        }
     }
 
-    public static void main(final String[] args) {
-        final JFrame frame = new JFrame();
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setLayout(new FlowLayout());
-
-        final NameSlot ns = new NameSlot("Process 1");
-        frame.add(ns);
-
-        final NameSlot ns2 = new NameSlot("Process 2");
-        frame.add(ns2);
-
+    private static void createAndShowUI() {
+        JFrame frame = new JFrame("DragLabelOnLayeredPane");
+        frame.getContentPane().add(new NameSlot());
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
 
+    public static void main(String[] args) {
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowUI();
+            }
+        });
     }
 }
