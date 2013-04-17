@@ -1,10 +1,12 @@
 package Sequential_History;
 
+import java.util.ArrayList;
+
 public class Process {
-	private String Action;
-	private Integer Value;
+	ArrayList<Event> Events = new ArrayList<Event>();
+
+	public Process() { }
 	
-	public Process() {
-		
-	}
+	public ArrayList<Event> getEvents() { return Events; }
+	public void setEvents(ArrayList<Event> events) { Events = events; }
 }
