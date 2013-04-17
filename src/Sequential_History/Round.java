@@ -4,15 +4,17 @@ import java.util.ArrayList;
 
 public class Round {
 	ArrayList<Process> Processes = new ArrayList<Process>();
-	ArrayList<Process> CorrectAnswer = new ArrayList<Process>();
+	ArrayList<Event> UserAnswer = new ArrayList<Event>();
 	
-	public Round(ArrayList<Process> Processes, ArrayList<Process> CorrectAnswer) {
+	public Round(ArrayList<Process> Processes, ArrayList<Event> UserAnswer) {
 		this.Processes = Processes;
-		this.CorrectAnswer = CorrectAnswer;
+		this.UserAnswer = UserAnswer;
 	}
 
 	public ArrayList<Process> getProcesses() { return Processes; }
 	public void setProcesses(ArrayList<Process> processes) { Processes = processes; }
-	public ArrayList<Process> getCorrectAnswer() { return CorrectAnswer; }
-	public void setCorrectAnswer(ArrayList<Process> correctAnswer) { CorrectAnswer = correctAnswer; }
+	
+	//need to write
+	public boolean checkUserAnswer() { return true; }
+	public void setUserAnswer(ArrayList<Event> userAnswer) { UserAnswer = userAnswer; }
 }
