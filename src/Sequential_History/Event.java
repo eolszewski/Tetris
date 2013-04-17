@@ -12,5 +12,4 @@ public class Event {
 	public void setAction(String action) { Action = action; }
 	public Integer getValue() { return Value; }
 	public void setValue(Integer value) { Value = value; }
-	
 }
