@@ -188,34 +188,58 @@ public class Game extends JLayeredPane {
         frame.setVisible(true);
     }
 
-    public static void main(String[] args) {
-    	ArrayList<Event> EventsArr = new ArrayList<Event>();
-		Event tempEve1 = new Event("Read", 1, 1);
-		Event tempEve2 = new Event("Write", 2, 1);
-		Event tempEve3 = new Event("Read", 3, 1);
+	public static ArrayList<Process> makeGame()
+	{
+		ArrayList<Event> EventsArr = new ArrayList<Event>();
+		//public Event(String action, Integer value, int eventID, String variable, int processID) {
+
+		Event tempEve1 = new Event("Write", 3, 0, "x", 0);
+		Event tempEve2 = new Event("Write", 4, 1, "x", 0);
+		//Event tempEve3 = new Event("Read", 3);
 		EventsArr.add(tempEve1);
 		EventsArr.add(tempEve2);
-		EventsArr.add(tempEve3);
-		Process P1 = new Process(EventsArr, 1);
+		//EventsArr.add(tempEve3);
+		Process P1 = new Process(EventsArr, 0);
+		
+		
 		ArrayList<Event> EventsArr2 = new ArrayList<Event>();
-		Event tempEve4 = new Event("Read", 2, 2);
-		Event tempEve5 = new Event("Write", 3, 2);
+		Event tempEve4 = new Event("Read", 4,0,"x",1);
+		//Event tempEve5 = new Event("Write", 3);
 		EventsArr2.add(tempEve4);
-		EventsArr2.add(tempEve5);
-		Process P2 = new Process(EventsArr2, 2);
+		//EventsArr2.add(tempEve5);
+		Process P2 = new Process(EventsArr2,1);
+		
+		
 		ArrayList<Event> EventsArr3 = new ArrayList<Event>();
-		Event tempEve6 = new Event("Write", 1, 3);
-		Event tempEve7 = new Event("Read", 2, 3);
-		Event tempEve8 = new Event("Write", 5, 3);
+		Event tempEve6 = new Event("Read", 3,0,"x",2);
+		//Event tempEve7 = new Event("Read", 2);
+		//Event tempEve8 = new Event("Write", 5);
 		EventsArr3.add(tempEve6);
-		EventsArr3.add(tempEve7);
-		EventsArr3.add(tempEve8);
-		Process P3 = new Process(EventsArr3, 3);
+		//EventsArr3.add(tempEve7);
+		//EventsArr3.add(tempEve8);
+		Process P3 = new Process(EventsArr3,2);
 		ArrayList<Process> ProcessesArr = new ArrayList<Process>();
 		ProcessesArr.add(P1);
 		ProcessesArr.add(P2);
 		ProcessesArr.add(P3);
-        java.awt.EventQueue.invokeLater(new Runnable() {
+		
+		return ProcessesArr;
+	}
+	
+    public static void main(String[] args) {
+		ArrayList<Process> game = makeGame();
+		ArrayList<Event> answer = new ArrayList<Event>();
+		//Event(String action, Integer value, int eventID, String variable, int processID) {
+		
+		answer.add(new Event("Write", 3, 0, "x", 0));
+		answer.add(new Event("Read", 3, 0, "x", 2));
+		answer.add(new Event("Write", 4, 1, "x", 0));
+		answer.add(new Event("Read", 4, 0, "x", 1));
+		Round r = new Round(game, answer);
+		
+		System.out.print(r.checkUserAnswer());
+
+		java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 createAndShowUI();
             }
