@@ -19,12 +19,10 @@ public class Game extends JLayeredPane {
     private JPanel[][] panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
     private JLabel Answer = new JLabel("Answer", SwingConstants.CENTER);
     private JButton Submit = new JButton("Submit");
+    private JButton Refresh = new JButton("Restart");
     private JButton NoAnswer = new JButton("No History");
 
-    public Game(ArrayList<Process> Game) {
-        JLabel redLabel = new JLabel("Write 1", SwingConstants.CENTER);
-        JLabel blueLabel = new JLabel("Read 3", SwingConstants.CENTER);
-
+    public Game(final ArrayList<Process> Game) {
         backingPanel.setSize(LAYERED_PANE_SIZE);
         backingPanel.setLocation(2 * GAP, 2 * GAP);
         backingPanel.setBackground(Color.black);
@@ -51,18 +49,42 @@ public class Game extends JLayeredPane {
             {	
             	JLabel Event = new JLabel(Game.get(i).getEvents().get(j).getAction() + " " + Game.get(i).getEvents().get(j).getVariable() + " " + Game.get(i).getEvents().get(j).getValue(), SwingConstants.CENTER);
             	Event.setOpaque(true);
-            	Event.setBackground(Color.gray.brighter());
+            	Event.setDisplayedMnemonic(Game.get(i).getEvents().get(j).getProcessID()*1000 + Game.get(i).getEvents().get(j).getEventID());
+            	Event.setBackground(Color.gray.brighter().brighter());
             	panelGrid[i+1][j+2].add(Event);
+            	panelGrid[i+1][j+2].setBorder(BorderFactory.createLineBorder(Color.BLACK));
             }
         }
         
         Answer.setOpaque(true);
         Answer.setPreferredSize(LABEL_SIZE);
         panelGrid[5][1].add(Answer);
-
+        
         Submit.setOpaque(true);
         Submit.setPreferredSize(LABEL_SIZE);
         panelGrid[5][9].add(Submit);
+        
+        Submit.addActionListener(new ActionListener()
+        {
+          public void actionPerformed(ActionEvent e)
+          {
+      		ArrayList<Event> answer = new ArrayList<Event>();
+    		
+            for(int i = 0; i < 4; i++)
+            {
+                Component[] components = panelGrid[5][2+i].getComponents();
+                JLabel temp = (JLabel) components[0];
+                answer.add(Game.get(temp.getDisplayedMnemonic()/1000).getEvents().get(temp.getDisplayedMnemonic()%10));
+                System.out.println(answer.toString());
+            }
+    		Round r = new Round(Game, answer);
+    		System.out.print(r.checkUserAnswer());
+          }
+        });
+        
+        Refresh.setOpaque(true);
+        Refresh.setPreferredSize(LABEL_SIZE);
+        panelGrid[5][8].add(Refresh);
         
         Font f = new Font("Dialog", Font.PLAIN, 8);
         NoAnswer.setOpaque(true);
@@ -93,27 +115,29 @@ public class Game extends JLayeredPane {
             }
             // if we click on jpanel that holds a jlabel
             if (components[0] instanceof JLabel) {
-
                 // remove label from panel
                 dragLabel = (JLabel) components[0];
-                clickedPanel.remove(dragLabel);
-                clickedPanel.revalidate();
-                clickedPanel.repaint();
-
-                dragLabelWidthDiv2 = dragLabel.getWidth() / 2;
-                dragLabelHeightDiv2 = dragLabel.getHeight() / 2;
-
-                int x = me.getPoint().x - dragLabelWidthDiv2;
-                int y = me.getPoint().y - dragLabelHeightDiv2;
-                dragLabel.setLocation(x, y);
-                add(dragLabel, JLayeredPane.DRAG_LAYER);
-                repaint();
+                if(dragLabel.getText().charAt(0) != 'P' && dragLabel.getText().charAt(0) != 'A')
+                {
+	                clickedPanel.remove(dragLabel);
+	                clickedPanel.revalidate();
+	                clickedPanel.repaint();
+	
+	                dragLabelWidthDiv2 = dragLabel.getWidth() / 2;
+	                dragLabelHeightDiv2 = dragLabel.getHeight() / 2;
+	
+	                int x = me.getPoint().x - dragLabelWidthDiv2;
+	                int y = me.getPoint().y - dragLabelHeightDiv2;
+	                dragLabel.setLocation(x, y);
+	                add(dragLabel, JLayeredPane.DRAG_LAYER);
+	                repaint();
+                }
             }
         }
 
         @Override
         public void mouseDragged(MouseEvent me) {
-            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P') {
+            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P' || dragLabel.getText().charAt(0) == 'A') {
                 dragLabel.setLocation(dragLabel.getX(), dragLabel.getY());
             	repaint();
                 return;
@@ -126,7 +150,7 @@ public class Game extends JLayeredPane {
 
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P') {
+            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P' || dragLabel.getText().charAt(0) == 'A') {
             	dragLabel.add(dragLabel);
             	dragLabel.revalidate();
                 return;
@@ -155,14 +179,13 @@ public class Game extends JLayeredPane {
                             }
                         }
                     }
-
-                    if (r == -1 || c == -1) {
+                    if (r == 5 || ((r-1) == dragLabel.getDisplayedMnemonic()/1000 && (c-2) == dragLabel.getDisplayedMnemonic()%10)){
+                        droppedPanel.add(dragLabel);
+                        droppedPanel.revalidate();
+                    }else {
                         // if off the grid, return label to home
                         clickedPanel.add(dragLabel);
                         clickedPanel.revalidate();
-                    } else {
-                        droppedPanel.add(dragLabel);
-                        droppedPanel.revalidate();
                     }
             	}
             }
@@ -215,7 +238,7 @@ public class Game extends JLayeredPane {
 		//Event(String action, Integer value, int eventID, String variable, int processID) {
 
     	final ArrayList<Process> game = makeGame();
-		ArrayList<Event> answer = new ArrayList<Event>();
+		/*ArrayList<Event> answer = new ArrayList<Event>();
 		
 		answer.add(new Event("Write", 3, 0, "x", 0));
 		answer.add(new Event("Read", 3, 0, "x", 2));
@@ -223,7 +246,7 @@ public class Game extends JLayeredPane {
 		answer.add(new Event("Read", 4, 0, "x", 1));
 		Round r = new Round(game, answer);
 		
-		System.out.print(r.checkUserAnswer());
+		System.out.print(r.checkUserAnswer());*/
 
 		java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
