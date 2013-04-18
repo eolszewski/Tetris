@@ -17,16 +17,14 @@ public class Game extends JLayeredPane {
     private GridLayout gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, GAP, GAP);
     private JPanel backingPanel = new JPanel(gridlayout);
     private JPanel[][] panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
-    private JLabel redLabel = new JLabel("Write 1", SwingConstants.CENTER);
-    private JLabel blueLabel = new JLabel("Read 3", SwingConstants.CENTER);
-    private JLabel Process1 = new JLabel("Process 1", SwingConstants.CENTER);
-    private JLabel Process2 = new JLabel("Process 2", SwingConstants.CENTER);
-    private JLabel Process3 = new JLabel("Process 3", SwingConstants.CENTER);
     private JLabel Answer = new JLabel("Answer", SwingConstants.CENTER);
     private JButton Submit = new JButton("Submit");
     private JButton NoAnswer = new JButton("No History");
 
-    public Game() {
+    public Game(ArrayList<Process> Game) {
+        JLabel redLabel = new JLabel("Write 1", SwingConstants.CENTER);
+        JLabel blueLabel = new JLabel("Read 3", SwingConstants.CENTER);
+
         backingPanel.setSize(LAYERED_PANE_SIZE);
         backingPanel.setLocation(2 * GAP, 2 * GAP);
         backingPanel.setBackground(Color.black);
@@ -44,32 +42,23 @@ public class Game extends JLayeredPane {
             }
         }
 
-        
-        Process1.setOpaque(true);
-        Process1.setPreferredSize(LABEL_SIZE);
-        panelGrid[1][1].add(Process1); 
-        
-        Process2.setOpaque(true);
-        Process2.setPreferredSize(LABEL_SIZE);
-        panelGrid[2][1].add(Process2);
-        
-        Process3.setOpaque(true);
-        Process3.setPreferredSize(LABEL_SIZE);
-        panelGrid[3][1].add(Process3);
+        for(int i = 0; i < Game.size(); i++){
+        	JLabel Process = new JLabel("Process " + (i+1), SwingConstants.CENTER);
+            Process.setOpaque(true);
+            Process.setPreferredSize(LABEL_SIZE);
+            panelGrid[i+1][1].add(Process); 
+            for(int j = 0; j < Game.get(i).Events.size(); j++)
+            {	
+            	JLabel Event = new JLabel(Game.get(i).getEvents().get(j).getAction() + " " + Game.get(i).getEvents().get(j).getVariable() + " " + Game.get(i).getEvents().get(j).getValue(), SwingConstants.CENTER);
+            	Event.setOpaque(true);
+            	Event.setBackground(Color.gray.brighter());
+            	panelGrid[i+1][j+2].add(Event);
+            }
+        }
         
         Answer.setOpaque(true);
         Answer.setPreferredSize(LABEL_SIZE);
         panelGrid[5][1].add(Answer);
-        
-        redLabel.setOpaque(true);
-        redLabel.setBackground(Color.red.brighter().brighter());
-        redLabel.setPreferredSize(LABEL_SIZE);
-        panelGrid[1][2].add(redLabel);
-
-        blueLabel.setOpaque(true);
-        blueLabel.setBackground(Color.blue.brighter().brighter());
-        blueLabel.setPreferredSize(LABEL_SIZE);
-        panelGrid[2][2].add(blueLabel);
 
         Submit.setOpaque(true);
         Submit.setPreferredSize(LABEL_SIZE);
@@ -124,7 +113,9 @@ public class Game extends JLayeredPane {
 
         @Override
         public void mouseDragged(MouseEvent me) {
-            if (dragLabel == null || dragLabel.getText().equals(Process1.getText()) || dragLabel.getText().equals(Process2.getText()) || dragLabel.getText().equals(Process3.getText())) {
+            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P') {
+                dragLabel.setLocation(dragLabel.getX(), dragLabel.getY());
+            	repaint();
                 return;
             }
             int x = me.getPoint().x - dragLabelWidthDiv2;
@@ -135,7 +126,9 @@ public class Game extends JLayeredPane {
 
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (dragLabel == null || dragLabel.getText().equals(Process1.getText()) || dragLabel.getText().equals(Process2.getText()) || dragLabel.getText().equals(Process3.getText())) {
+            if (dragLabel == null || dragLabel.getText().charAt(0) == 'P') {
+            	dragLabel.add(dragLabel);
+            	dragLabel.revalidate();
                 return;
             }
             remove(dragLabel); // remove dragLabel for drag layer of JLayeredPane
@@ -179,9 +172,9 @@ public class Game extends JLayeredPane {
         }
     }
 
-    private static void createAndShowUI() {
+    private static void createAndShowUI(ArrayList<Process> game) {
         JFrame frame = new JFrame("DragLabelOnLayeredPane");
-        frame.getContentPane().add(new Game());
+        frame.getContentPane().add(new Game(game));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setLocationRelativeTo(null);
@@ -195,28 +188,20 @@ public class Game extends JLayeredPane {
 
 		Event tempEve1 = new Event("Write", 3, 0, "x", 0);
 		Event tempEve2 = new Event("Write", 4, 1, "x", 0);
-		//Event tempEve3 = new Event("Read", 3);
 		EventsArr.add(tempEve1);
 		EventsArr.add(tempEve2);
-		//EventsArr.add(tempEve3);
 		Process P1 = new Process(EventsArr, 0);
 		
 		
 		ArrayList<Event> EventsArr2 = new ArrayList<Event>();
 		Event tempEve4 = new Event("Read", 4,0,"x",1);
-		//Event tempEve5 = new Event("Write", 3);
 		EventsArr2.add(tempEve4);
-		//EventsArr2.add(tempEve5);
 		Process P2 = new Process(EventsArr2,1);
 		
 		
 		ArrayList<Event> EventsArr3 = new ArrayList<Event>();
 		Event tempEve6 = new Event("Read", 3,0,"x",2);
-		//Event tempEve7 = new Event("Read", 2);
-		//Event tempEve8 = new Event("Write", 5);
 		EventsArr3.add(tempEve6);
-		//EventsArr3.add(tempEve7);
-		//EventsArr3.add(tempEve8);
 		Process P3 = new Process(EventsArr3,2);
 		ArrayList<Process> ProcessesArr = new ArrayList<Process>();
 		ProcessesArr.add(P1);
@@ -227,9 +212,10 @@ public class Game extends JLayeredPane {
 	}
 	
     public static void main(String[] args) {
-		ArrayList<Process> game = makeGame();
-		ArrayList<Event> answer = new ArrayList<Event>();
 		//Event(String action, Integer value, int eventID, String variable, int processID) {
+
+    	final ArrayList<Process> game = makeGame();
+		ArrayList<Event> answer = new ArrayList<Event>();
 		
 		answer.add(new Event("Write", 3, 0, "x", 0));
 		answer.add(new Event("Read", 3, 0, "x", 2));
@@ -241,7 +227,7 @@ public class Game extends JLayeredPane {
 
 		java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                createAndShowUI();
+                createAndShowUI(game);
             }
         });
     }
