@@ -247,11 +247,12 @@ public class Game extends JLayeredPane {
 		Round r = new Round(game, answer);
 		
 		System.out.print(r.checkUserAnswer());*/
-
-		java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowUI(game);
-            }
-        });
+    	Round r = new Round(game);
+    	System.out.println(r.checkSCPossible());
+	//	java.awt.EventQueue.invokeLater(new Runnable() {
+     //       public void run() {
+      //          createAndShowUI(game);
+       //     }
+       // });
     }
 }

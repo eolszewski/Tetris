@@ -45,4 +45,8 @@ public class Event {
 	public void setVariable(String variable) {
 		this.variable = variable;
 	}
+	
+	public String toString(){
+		return "Process:" + this.processID + " Event:" + this.eventID;
+	}
 }
