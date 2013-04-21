@@ -24,13 +24,14 @@ import javax.swing.SwingConstants;
 public class Game extends JLayeredPane {
 	public int WIDTH = 0, HEIGHT = 0;
 	private int GRID_ROWS = 0, GRID_COLS = 3;
-	private static final int GAP = 0;
 	private Dimension LAYERED_PANE_SIZE;
-	private Dimension LABEL_SIZE = new Dimension(60, 40);
+	private Dimension LABEL_SIZE = new Dimension(70, 40);
 	private GridLayout gridlayout;
 	private JPanel backingPanel;
 	private JPanel[][] panelGrid;
 	private JLabel Answer = new JLabel("Answer", SwingConstants.CENTER);
+	private JLabel Score = new JLabel("Score: 100", SwingConstants.CENTER);
+	private JLabel Round = new JLabel("Round: 10", SwingConstants.CENTER);
 	private JButton Submit = new JButton("Submit");
 	private JButton Refresh = new JButton("Restart");
 	private JButton NoAnswer = new JButton("No History");
@@ -41,8 +42,8 @@ public class Game extends JLayeredPane {
 		makeButtons();
 		addListeners(Game);
 
-		backingPanel.setBorder(BorderFactory.createEmptyBorder(GAP, GAP, GAP,
-				GAP));
+		backingPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0,
+				0));
 		setPreferredSize(LAYERED_PANE_SIZE);
 		add(backingPanel, JLayeredPane.DEFAULT_LAYER);
 		MyMouseAdapter myMouseAdapter = new MyMouseAdapter();
@@ -78,17 +79,17 @@ public class Game extends JLayeredPane {
 
 	private void makeBoard(final ArrayList<Process> Game) {
 		GRID_ROWS = 4 + Game.size();
-		HEIGHT = 60 * GRID_ROWS;
+		HEIGHT = 70 * GRID_ROWS;
 		for (Process p : Game)
 			GRID_COLS += p.getEvents().size();
-		WIDTH = 60 * GRID_COLS;
+		WIDTH = 70 * GRID_COLS;
 		LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
-		gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, GAP, GAP);
+		gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, 0, 0);
 		backingPanel = new JPanel(gridlayout);
 		panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
 
 		backingPanel.setSize(LAYERED_PANE_SIZE);
-		backingPanel.setLocation(2 * GAP, 2 * GAP);
+		backingPanel.setLocation(0, 0);
 		backingPanel.setBackground(Color.black);
 		for (int row = 0; row < GRID_ROWS; row++) {
 			for (int col = 0; col < GRID_COLS; col++) {
@@ -106,6 +107,12 @@ public class Game extends JLayeredPane {
 	private void makeButtons() {
 		Answer.setPreferredSize(LABEL_SIZE);
 		panelGrid[GRID_ROWS - 2][1].add(Answer);
+		
+		Score.setPreferredSize(LABEL_SIZE);
+		panelGrid[0][GRID_COLS-2].add(Score);
+		
+		Round.setPreferredSize(LABEL_SIZE);
+		panelGrid[0][0].add(Round);
 
 		Refresh.setPreferredSize(LABEL_SIZE);
 		panelGrid[GRID_ROWS - 3][GRID_COLS - 1].add(Refresh);
@@ -191,7 +198,8 @@ public class Game extends JLayeredPane {
 			if (components[0] instanceof JLabel) {
 				dragLabel = (JLabel) components[0];
 				if (dragLabel.getText().charAt(0) != 'P'
-						&& dragLabel.getText().charAt(0) != 'A') {
+						&& dragLabel.getText().charAt(0) != 'A' && !dragLabel.getText().substring(0, 5).equals("Round") 
+						&& !dragLabel.getText().substring(0, 5).equals("Score")) {
 					clickedPanel.remove(dragLabel);
 					clickedPanel.revalidate();
 					clickedPanel.repaint();
@@ -211,7 +219,8 @@ public class Game extends JLayeredPane {
 		@Override
 		public void mouseDragged(MouseEvent me) {
 			if (dragLabel == null || dragLabel.getText().charAt(0) == 'P'
-					|| dragLabel.getText().charAt(0) == 'A') {
+					|| dragLabel.getText().charAt(0) == 'A'  || dragLabel.getText().substring(0, 5).equals("Round") 
+							|| dragLabel.getText().substring(0, 5).equals("Score")) {
 				dragLabel.setLocation(dragLabel.getX(), dragLabel.getY());
 				repaint();
 				return;
@@ -225,7 +234,8 @@ public class Game extends JLayeredPane {
 		@Override
 		public void mouseReleased(MouseEvent me) {
 			if (dragLabel == null || dragLabel.getText().charAt(0) == 'P'
-					|| dragLabel.getText().charAt(0) == 'A') {
+					|| dragLabel.getText().charAt(0) == 'A' || dragLabel.getText().substring(0, 5).equals("Round") 
+							|| dragLabel.getText().substring(0, 5).equals("Score")) {
 				dragLabel.add(dragLabel);
 				dragLabel.revalidate();
 				return;
@@ -264,7 +274,7 @@ public class Game extends JLayeredPane {
 	}
 
 	private static void createAndShowUI(ArrayList<Process> game) {
-		JFrame frame = new JFrame("DragLabelOnLayeredPane");
+		JFrame frame = new JFrame("Sequential History Finder!");
 		frame.getContentPane().add(new Game(game));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.pack();
