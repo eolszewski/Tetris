@@ -7,16 +7,14 @@ import java.util.ArrayList;
 import javax.swing.*;
 
 public class Game extends JLayeredPane {
-    public static final int WIDTH = 800;
-    public static final int HEIGHT = 600;
-    private static final int GRID_ROWS = 7;
-    private static final int GRID_COLS = 10;
+    public int WIDTH = 0, HEIGHT = 0;
+    private int GRID_ROWS = 0, GRID_COLS = 3;
     private static final int GAP = 0;
-    private static final Dimension LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
-    private static final Dimension LABEL_SIZE = new Dimension(60, 40);
-    private GridLayout gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, GAP, GAP);
-    private JPanel backingPanel = new JPanel(gridlayout);
-    private JPanel[][] panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
+    private Dimension LAYERED_PANE_SIZE;
+    private Dimension LABEL_SIZE = new Dimension(60, 40);
+    private GridLayout gridlayout;
+    private JPanel backingPanel;
+    private JPanel[][] panelGrid;
     private JLabel Answer = new JLabel("Answer", SwingConstants.CENTER);
     private JButton Submit = new JButton("Submit");
     private JButton Refresh = new JButton("Restart");
@@ -55,12 +53,22 @@ public class Game extends JLayeredPane {
 	}
 
 	private void makeBoard(final ArrayList<Process> Game) {
+	    GRID_ROWS = 4+Game.size();
+	    HEIGHT = 60*GRID_ROWS;
+	    for(Process p : Game)
+	    	GRID_COLS += p.getEvents().size();
+	    WIDTH = 60*GRID_COLS;
+	    LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
+	    gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, GAP, GAP);
+	    backingPanel = new JPanel(gridlayout);
+	    panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
+	    
         backingPanel.setSize(LAYERED_PANE_SIZE);
         backingPanel.setLocation(2 * GAP, 2 * GAP);
         backingPanel.setBackground(Color.black);
         for (int row = 0; row < GRID_ROWS; row++) {
             for (int col = 0; col < GRID_COLS; col++) {
-            	if(row == 5 && col > 1 && col < 9)
+            	if(row == (GRID_ROWS-2) && col > 1 && col < (GRID_COLS-1))
             	{
             		JPanel temp = new JPanel(new GridBagLayout());
             		temp.setBorder(BorderFactory.createLineBorder(Color.BLACK));
@@ -75,18 +83,18 @@ public class Game extends JLayeredPane {
 	
 	private void makeButtons() {
         Answer.setPreferredSize(LABEL_SIZE);
-        panelGrid[5][1].add(Answer);
-        
-        Submit.setPreferredSize(LABEL_SIZE);
-        panelGrid[5][9].add(Submit);
+        panelGrid[GRID_ROWS-2][1].add(Answer);
         
         Refresh.setPreferredSize(LABEL_SIZE);
-        panelGrid[4][9].add(Refresh);
+        panelGrid[GRID_ROWS-3][GRID_COLS-1].add(Refresh);
+        
+        Submit.setPreferredSize(LABEL_SIZE);
+        panelGrid[GRID_ROWS-2][GRID_COLS-1].add(Submit);
         
         Font f = new Font("Dialog", Font.PLAIN, 8);
         NoAnswer.setPreferredSize(LABEL_SIZE);
         NoAnswer.setFont(f); 
-        panelGrid[6][9].add(NoAnswer);
+        panelGrid[GRID_ROWS-1][GRID_COLS-1].add(NoAnswer);
 	}
 
 	private void addListeners(final ArrayList<Process> Game) {
