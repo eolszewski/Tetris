@@ -35,7 +35,7 @@ public class Game extends JLayeredPane {
 	private JButton Submit = new JButton("Submit");
 	private JButton Refresh = new JButton("Restart");
 	private JButton NoAnswer = new JButton("No History");
-
+	static JFrame frame = null;
 	public Game(final ArrayList<Process> Game) {
 		makeBoard(Game);
 		addEvents(Game);
@@ -176,7 +176,10 @@ public class Game extends JLayeredPane {
 		});
 
 		Refresh.addActionListener(new ActionListener() {
+			
+			
 			public void actionPerformed(ActionEvent e) {
+				frame.dispose();
 				createAndShowUI(Game);
 			}
 		});
@@ -274,7 +277,8 @@ public class Game extends JLayeredPane {
 	}
 
 	private static void createAndShowUI(ArrayList<Process> game) {
-		JFrame frame = new JFrame("Sequential History Finder!");
+		
+		frame = new JFrame("Sequential History Finder!");
 		frame.getContentPane().add(new Game(game));
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.pack();
