@@ -25,7 +25,7 @@ public class Game extends JLayeredPane {
 	public int WIDTH = 0, HEIGHT = 0;
 	private int GRID_ROWS = 0, GRID_COLS = 3;
 	private Dimension LAYERED_PANE_SIZE;
-	private Dimension LABEL_SIZE = new Dimension(70, 40);
+	private Dimension LABEL_SIZE = new Dimension(100, 40);
 	private GridLayout gridlayout;
 	private JPanel backingPanel;
 	private JPanel[][] panelGrid;
@@ -82,7 +82,7 @@ public class Game extends JLayeredPane {
 		HEIGHT = 70 * GRID_ROWS;
 		for (Process p : Game)
 			GRID_COLS += p.getEvents().size();
-		WIDTH = 70 * GRID_COLS;
+		WIDTH = 100 * GRID_COLS;
 		LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
 		gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, 0, 0);
 		backingPanel = new JPanel(gridlayout);
@@ -109,7 +109,7 @@ public class Game extends JLayeredPane {
 		panelGrid[GRID_ROWS - 2][1].add(Answer);
 		
 		Score.setPreferredSize(LABEL_SIZE);
-		panelGrid[0][GRID_COLS-2].add(Score);
+		panelGrid[0][GRID_COLS-1].add(Score);
 		
 		Round.setPreferredSize(LABEL_SIZE);
 		panelGrid[0][0].add(Round);
@@ -153,9 +153,11 @@ public class Game extends JLayeredPane {
 				for (int i = 0; i < 4; i++) {
 					Component[] components = panelGrid[5][2 + i]
 							.getComponents();
-					JLabel temp = (JLabel) components[0];
-					answer.add(Game.get(temp.getDisplayedMnemonic() / 1000)
+					if (components.length > 0) {
+						JLabel temp = (JLabel) components[0];
+						answer.add(Game.get(temp.getDisplayedMnemonic() / 1000)
 							.getEvents().get(temp.getDisplayedMnemonic() % 10));
+					}
 				}
 				return answer;
 			}

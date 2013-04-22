@@ -37,35 +37,22 @@ public class Round {
 			}
 		}
 		//System.out.println("Hello");
-		HashMap <String, ArrayList<Integer>> cache = new HashMap<String, ArrayList<Integer>> ();
+		HashMap <String, Integer> cache = new HashMap<String, Integer> ();
 		//cache.
 		for(Event e: UserAnswer){
 			//System.out.println(e);
 			if(e.getAction().equals("Write")){
-				if(cache.containsKey(e.getVariable() + e.getValue())){
-					ArrayList<Integer> temp = cache.get(e.getVariable() + e.getValue());
-					temp.add(e.getValue());
-					cache.put(e.getVariable() + e.getValue(), temp);
-				}
-				else{
-					ArrayList<Integer> values = new ArrayList<Integer>();
-					values.add(e.getValue());
-					cache.put(e.getVariable() + e.getValue(), values);
-				}
+				cache.put(e.getVariable(), e.getValue());
 			}
-			else{						//read
-				if(cache.containsKey(e.getVariable() + e.getValue())){
-					if(cache.get(e.getVariable() + e.getValue()).size() > 1){
-						ArrayList<Integer> temp = cache.get(e.getVariable() + e.getValue());
-						temp.remove(0);
-						cache.put(e.getVariable() + e.getValue(), temp);
+			else {						//read
+				if(cache.containsKey(e.getVariable())){
+					if (!e.getValue().equals(cache.get(e.getVariable()))) {
+						return false;
 					}
-					else{
-						cache.remove(e.getVariable() + e.getValue());
+				} else {
+					if (!e.getValue().equals(0)) {
+						return false;
 					}
-				}
-				else {
-					return false;
 				}
 			}
 		}
