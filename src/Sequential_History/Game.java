@@ -4,15 +4,19 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.swing.BorderFactory;
+import javax.swing.border.*;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -21,170 +25,117 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-public class Game extends JLayeredPane {
+public class Game {
 	public int WIDTH = 0, HEIGHT = 0;
-	private int GRID_ROWS = 0, GRID_COLS = 3;
-	private Dimension LAYERED_PANE_SIZE;
-	private Dimension LABEL_SIZE = new Dimension(100, 40);
-	private GridLayout gridlayout;
-	private JPanel backingPanel;
-	private JPanel[][] panelGrid;
-	private JLabel Answer = new JLabel("Answer", SwingConstants.CENTER);
-	private JLabel Score = new JLabel("Score: 100", SwingConstants.CENTER);
-	private JLabel Round = new JLabel("Round: 10", SwingConstants.CENTER);
-	private JButton Submit = new JButton("Submit");
-	private JButton Refresh = new JButton("Restart");
-	private JButton NoAnswer = new JButton("No History");
+	private int NUM_EVENTS = 0, MAX_P_EVENTS = 0, NUM_PROCESSES = 0;
+	private JPanel[][] processGrid;
+	private JPanel[][] answerGrid;
+	private JPanel gridPanel;
+	private JPanel answerPanel;
+	private JButton submitButton = new JButton("Submit");
+	private JButton resetButton = new JButton("Reset");
+	private JButton noAnswerButton = new JButton("No History");
+	private JButton newButton = new JButton("New Round");
+	private JButton solveButton = new JButton("Solve");
 	static JFrame frame = null;
-	public Game(final ArrayList<Process> Game) {
-		makeBoard(Game);
-		addEvents(Game);
-		makeButtons();
-		addListeners(Game);
-
-		backingPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0,
-				0));
-		setPreferredSize(LAYERED_PANE_SIZE);
-		add(backingPanel, JLayeredPane.DEFAULT_LAYER);
+	private ArrayList<Process> processes;
+	private HashMap<JLabel, Event> home;
+    
+	public Game(final ArrayList<Process> p) {
+		processes = p;
+		initComponents();
+		addEvents();
+		addListeners();
 		MyMouseAdapter myMouseAdapter = new MyMouseAdapter();
-		addMouseListener(myMouseAdapter);
-		addMouseMotionListener(myMouseAdapter);
+		frame.getContentPane().addMouseListener(myMouseAdapter);
+		frame.getContentPane().addMouseMotionListener(myMouseAdapter);
+		
+		
 	}
 
-	private void addEvents(ArrayList<Process> Game) {
-		for (int i = 0; i < Game.size(); i++) {
-			JLabel Process = new JLabel("Process " + (i + 1),
-					SwingConstants.CENTER);
-			Process.setOpaque(true);
-			Process.setPreferredSize(LABEL_SIZE);
-			panelGrid[i + 1][1].add(Process);
-			for (int j = 0; j < Game.get(i).Events.size(); j++) {
-				JLabel Event = new JLabel(Game.get(i).getEvents().get(j)
-						.getAction()
-						+ " "
-						+ Game.get(i).getEvents().get(j).getVariable()
-						+ " " + Game.get(i).getEvents().get(j).getValue(),
-						SwingConstants.CENTER);
-				Event.setOpaque(true);
-				Event.setDisplayedMnemonic(Game.get(i).getEvents().get(j)
-						.getProcessID()
-						* 1000 + Game.get(i).getEvents().get(j).getEventID());
-				Event.setBackground(Color.gray.brighter().brighter());
-				panelGrid[i + 1][j + 2].add(Event);
-				panelGrid[i + 1][j + 2].setBorder(BorderFactory
-						.createLineBorder(Color.BLACK));
+	private void addEvents() {
+		home = new HashMap<JLabel, Event>();
+		for (int i = 0; i < NUM_PROCESSES; i++) {
+			Process p = processes.get(i);
+			ArrayList<Event> events = p.getEvents();
+			for (int j = 0; j < events.size(); j++) {
+				Event e = events.get(j);
+				JLabel label = new JLabel(e.getAction() + " " + e.getVariable() + " " + e.getValue(), SwingConstants.CENTER);
+				label.setOpaque(true);
+				label.setBackground(new Color(255,255,255));
+				home.put(label, e);
+				processGrid[i][j].add(label);
 			}
 		}
 	}
-
-	private void makeBoard(final ArrayList<Process> Game) {
-		GRID_ROWS = 4 + Game.size();
-		HEIGHT = 70 * GRID_ROWS;
-		for (Process p : Game)
-			GRID_COLS += p.getEvents().size();
-		WIDTH = 100 * GRID_COLS;
-		LAYERED_PANE_SIZE = new Dimension(WIDTH, HEIGHT);
-		gridlayout = new GridLayout(GRID_ROWS, GRID_COLS, 0, 0);
-		backingPanel = new JPanel(gridlayout);
-		panelGrid = new JPanel[GRID_ROWS][GRID_COLS];
-
-		backingPanel.setSize(LAYERED_PANE_SIZE);
-		backingPanel.setLocation(0, 0);
-		backingPanel.setBackground(Color.black);
-		for (int row = 0; row < GRID_ROWS; row++) {
-			for (int col = 0; col < GRID_COLS; col++) {
-				if (row == (GRID_ROWS - 2) && col > 1 && col < (GRID_COLS - 1)) {
-					JPanel temp = new JPanel(new GridBagLayout());
-					temp.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-					panelGrid[row][col] = temp;
-				} else
-					panelGrid[row][col] = new JPanel(new GridBagLayout());
-				backingPanel.add(panelGrid[row][col]);
+	
+	private ArrayList<Event> getAnswer() {
+		ArrayList<Event> answer = new ArrayList<Event>();
+		for (int i = 0; i < NUM_EVENTS; i++) {				
+			Component[] components = answerGrid[0][i].getComponents();
+			if (components.length > 0) {
+				if (components[0] instanceof JLabel) {
+					answer.add(home.get((JLabel) components[0]));
+				}
 			}
 		}
+		return answer;
 	}
-
-	private void makeButtons() {
-		Answer.setPreferredSize(LABEL_SIZE);
-		panelGrid[GRID_ROWS - 2][1].add(Answer);
-		
-		Score.setPreferredSize(LABEL_SIZE);
-		panelGrid[0][GRID_COLS-1].add(Score);
-		
-		Round.setPreferredSize(LABEL_SIZE);
-		panelGrid[0][0].add(Round);
-
-		Refresh.setPreferredSize(LABEL_SIZE);
-		panelGrid[GRID_ROWS - 3][GRID_COLS - 1].add(Refresh);
-
-		Submit.setPreferredSize(LABEL_SIZE);
-		panelGrid[GRID_ROWS - 2][GRID_COLS - 1].add(Submit);
-
-		Font f = new Font("Dialog", Font.PLAIN, 8);
-		NoAnswer.setPreferredSize(LABEL_SIZE);
-		NoAnswer.setFont(f);
-		panelGrid[GRID_ROWS - 1][GRID_COLS - 1].add(NoAnswer);
-	}
-
-	private void addListeners(final ArrayList<Process> Game) {
-		Submit.addActionListener(new ActionListener() {
+	
+	private void addListeners() {
+		submitButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				ArrayList<Event> answer = getAnswer(Game);
-				if(answer.size() != GRID_COLS-3)
+				ArrayList<Event> answer = getAnswer();
+				if(answer.size() != NUM_EVENTS)
 					JOptionPane.showMessageDialog(null,
 							"Please add all events to this history", "Error",
 							JOptionPane.ERROR_MESSAGE);
 				else
 				{
-					Round r = new Round(Game, answer);
+					Round r = new Round(processes, answer);
 					if (!r.checkUserAnswer())
 						JOptionPane.showMessageDialog(null,
 								"This is not a sequential history", "Wrong!",
-								JOptionPane.INFORMATION_MESSAGE);
+								JOptionPane.ERROR_MESSAGE);
 					else
 						JOptionPane.showMessageDialog(null,
 								"This is a valid sequential history", "Correct!",
 								JOptionPane.INFORMATION_MESSAGE);
 				}
 			}
-
-			private ArrayList<Event> getAnswer(ArrayList<Process> Game) {
-				ArrayList<Event> answer = new ArrayList<Event>();
-				for (int i = 0; i < 4; i++) {
-					Component[] components = panelGrid[5][2 + i]
-							.getComponents();
-					if (components.length > 0) {
-						JLabel temp = (JLabel) components[0];
-						answer.add(Game.get(temp.getDisplayedMnemonic() / 1000)
-							.getEvents().get(temp.getDisplayedMnemonic() % 10));
-					}
-				}
-				return answer;
-			}
 		});
-
-		NoAnswer.addActionListener(new ActionListener() {
+		
+		noAnswerButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Round r = new Round(Game);
+				Round r = new Round(processes);
 				if (r.checkSCPossible())
 					JOptionPane.showMessageDialog(null,
 							"There exists a sequential history", "Wrong!",
-							JOptionPane.INFORMATION_MESSAGE);
+							JOptionPane.ERROR_MESSAGE);
 				else
 					JOptionPane.showMessageDialog(null,
 							"There does not exist a sequential history",
 							"Correct!", JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
-
-		Refresh.addActionListener(new ActionListener() {
-			
-			
+		
+		resetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				frame.dispose();
-				createAndShowUI(Game);
+				for (int i = 0; i < NUM_EVENTS; i++) {
+					if (answerGrid[0][i].getComponentCount() > 0) {
+						JLabel label = (JLabel) answerGrid[0][i].getComponent(0);
+						answerGrid[0][i].remove(label);
+						answerGrid[0][i].revalidate();
+						answerGrid[0][i].repaint();
+						Event event = home.get(label);
+						processGrid[event.getProcessID()][event.getEventID()].add(label);
+						processGrid[event.getProcessID()][event.getEventID()].revalidate();
+					}
+				}
 			}
 		});
+		
+		
 	}
 
 	private class MyMouseAdapter extends MouseAdapter {
@@ -195,106 +146,249 @@ public class Game extends JLayeredPane {
 
 		@Override
 		public void mousePressed(MouseEvent me) {
-			clickedPanel = (JPanel) backingPanel.getComponentAt(me.getPoint());
+			Component container = me.getComponent().getComponentAt(me.getPoint());
+			if (!(container.equals(gridPanel) || container.equals(answerPanel))) {
+				return;
+			}
+			clickedPanel = (JPanel) container.getComponentAt(new Point(me.getX() - container.getX(), me.getY() - container.getY()));
 			Component[] components = clickedPanel.getComponents();
 			if (components.length == 0) {
 				return;
 			}
 			if (components[0] instanceof JLabel) {
 				dragLabel = (JLabel) components[0];
-				if (dragLabel.getText().charAt(0) != 'P'
-						&& dragLabel.getText().charAt(0) != 'A' && !dragLabel.getText().substring(0, 5).equals("Round") 
-						&& !dragLabel.getText().substring(0, 5).equals("Score")) {
-					clickedPanel.remove(dragLabel);
-					clickedPanel.revalidate();
-					clickedPanel.repaint();
+				clickedPanel.remove(dragLabel);
+				clickedPanel.revalidate();
+				clickedPanel.repaint();
 
-					dragLabelWidthDiv2 = dragLabel.getWidth() / 2;
-					dragLabelHeightDiv2 = dragLabel.getHeight() / 2;
+				dragLabelWidthDiv2 = dragLabel.getWidth() / 2;
+				dragLabelHeightDiv2 = dragLabel.getHeight() / 2;
 
-					int x = me.getPoint().x - dragLabelWidthDiv2;
-					int y = me.getPoint().y - dragLabelHeightDiv2;
-					dragLabel.setLocation(x, y);
-					add(dragLabel, JLayeredPane.DRAG_LAYER);
-					repaint();
-				}
+				int x = me.getX() - dragLabelWidthDiv2 - me.getComponent().getX();
+				int y = me.getY() - dragLabelHeightDiv2 - me.getComponent().getY();
+				dragLabel.setLocation(x, y);
+				frame.getContentPane().add(dragLabel, JLayeredPane.DRAG_LAYER);
+				frame.getContentPane().repaint();
 			}
 		}
 
 		@Override
 		public void mouseDragged(MouseEvent me) {
-			if (dragLabel == null || dragLabel.getText().charAt(0) == 'P'
-					|| dragLabel.getText().charAt(0) == 'A'  || dragLabel.getText().substring(0, 5).equals("Round") 
-							|| dragLabel.getText().substring(0, 5).equals("Score")) {
-				dragLabel.setLocation(dragLabel.getX(), dragLabel.getY());
-				repaint();
+			if (dragLabel == null)
 				return;
-			}
-			int x = me.getPoint().x - dragLabelWidthDiv2;
-			int y = me.getPoint().y - dragLabelHeightDiv2;
+			Component container = me.getComponent();
+			int x = me.getX() - dragLabelWidthDiv2 + container.getX();
+			int y = me.getY() - dragLabelHeightDiv2 + container.getY();
 			dragLabel.setLocation(x, y);
-			repaint();
+			frame.getContentPane().repaint();
 		}
 
 		@Override
 		public void mouseReleased(MouseEvent me) {
-			if (dragLabel == null || dragLabel.getText().charAt(0) == 'P'
-					|| dragLabel.getText().charAt(0) == 'A' || dragLabel.getText().substring(0, 5).equals("Round") 
-							|| dragLabel.getText().substring(0, 5).equals("Score")) {
-				dragLabel.add(dragLabel);
-				dragLabel.revalidate();
+			if (dragLabel == null) {
 				return;
 			}
-			remove(dragLabel);
-			JPanel droppedPanel = (JPanel) backingPanel.getComponentAt(me
-					.getPoint());
+			frame.getContentPane().remove(dragLabel);
+			Component container = me.getComponent().getComponentAt(me.getPoint());
+			if (container == null) {
+				clickedPanel.add(dragLabel);
+				clickedPanel.revalidate();
+				frame.getContentPane().repaint();
+				dragLabel = null;
+				return;
+			}
+			if (!container.equals(answerPanel) && !container.equals(gridPanel)) {
+				clickedPanel.add(dragLabel);
+				clickedPanel.revalidate();
+				frame.getContentPane().repaint();
+				dragLabel = null;
+				return;
+			}
+			JPanel droppedPanel = (JPanel) container.getComponentAt(new Point(me.getX() - container.getX(), me.getY() - container.getY()));
 			if (droppedPanel == null) {
 				clickedPanel.add(dragLabel);
 				clickedPanel.revalidate();
 			} else {
-				int r = -1;
-				int c = -1;
-				searchPanelGrid: for (int row = 0; row < panelGrid.length; row++) {
-					for (int col = 0; col < panelGrid[row].length; col++) {
-						if (panelGrid[row][col] == droppedPanel) {
-							r = row;
-							c = col;
-							break searchPanelGrid;
-						}
-					}
+				if (container.equals(gridPanel)) {
+					Event event = home.get(dragLabel);
+					processGrid[event.getProcessID()][event.getEventID()].add(dragLabel);
+					processGrid[event.getProcessID()][event.getEventID()].revalidate();
 				}
-				if (r == 5
-						|| ((r - 1) == dragLabel.getDisplayedMnemonic() / 1000 && (c - 2) == dragLabel
-								.getDisplayedMnemonic() % 10)) {
+				
+				if (container.equals(answerPanel)) {
+					if (droppedPanel.equals(answerPanel)) {
+						clickedPanel.add(dragLabel);
+						clickedPanel.revalidate();
+						frame.getContentPane().repaint();
+						dragLabel = null;
+						return;
+					}
+					if (droppedPanel.getComponentCount() > 0) {
+							JLabel moveLabel = (JLabel) droppedPanel.getComponent(0);
+							droppedPanel.remove(moveLabel);
+							Event event = home.get(moveLabel);
+							processGrid[event.getProcessID()][event.getEventID()].add(moveLabel);
+							processGrid[event.getProcessID()][event.getEventID()].revalidate();
+					}
 					droppedPanel.add(dragLabel);
 					droppedPanel.revalidate();
-				} else {
-					clickedPanel.add(dragLabel);
-					clickedPanel.revalidate();
 				}
 			}
-			repaint();
+			frame.getContentPane().repaint();
 			dragLabel = null;
 		}
 	}
+	
+	private void initComponents() {
+        gridPanel = new javax.swing.JPanel();
+        JPanel jPanel11 = new javax.swing.JPanel();
+        answerPanel = new javax.swing.JPanel();
+        
+        
+        frame = new JFrame("Sequential History Finder!");
+        frame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setContentPane(new JLayeredPane());
+        NUM_PROCESSES = processes.size();
+        
+        jPanel11.setLayout(new java.awt.GridLayout(NUM_PROCESSES, 0));
+        
+        for (Process p : processes) {
+        	if (p.getEvents().size() > MAX_P_EVENTS) {
+        		MAX_P_EVENTS = p.getEvents().size();
+        	}
+        	NUM_EVENTS += p.getEvents().size();
+        }
+        
+        gridPanel.setLayout(new java.awt.GridLayout(NUM_PROCESSES, MAX_P_EVENTS));
+        processGrid = new JPanel[NUM_PROCESSES][MAX_P_EVENTS];
+        
+        for (int i = 0; i< NUM_PROCESSES; i++) {
+        	jPanel11.add(new JLabel("Process " + (i + 1), SwingConstants.CENTER));
+        	for (int j = 0; j < MAX_P_EVENTS; j++) {
+        		JPanel temp = new JPanel(new GridBagLayout());
+        		temp.setPreferredSize(new Dimension(70,70));
+        		if (j < processes.get(i).getEvents().size()) {
+        			int top = 1, left = 1;
+            		if (j > 0) {
+            			left = 0;
+            		}
+            		if (i > 0) {
+            			if (j < processes.get(i-1).getEvents().size()) {
+            				top = 0;
+            			}
+            		}
+            		temp.setBorder(BorderFactory.createMatteBorder(top, left, 1, 1, new Color(0, 0, 0)));
+        		} 
+        		processGrid[i][j] = temp;
+        		gridPanel.add(processGrid[i][j]);
+        		
+        	}
+        }
+      
 
-	private static void createAndShowUI(ArrayList<Process> game) {
-		
-		frame = new JFrame("Sequential History Finder!");
-		frame.getContentPane().add(new Game(game));
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.pack();
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
-	}
+        answerPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Answer", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        answerPanel.setLayout(new java.awt.GridLayout(1, NUM_EVENTS));
+        
+        answerGrid = new JPanel[1][NUM_EVENTS];
+        
+        for (int i = 0; i < NUM_EVENTS; i++) {
+        	JPanel temp = new JPanel(new GridBagLayout());
+        	int left = 0;
+        	if (i == 0) {
+        		left = 1;
+        	}
+        	temp.setPreferredSize(new Dimension(70,70));
+        	temp.setBorder(BorderFactory.createMatteBorder(1, left, 1, 1, new Color(0, 0, 0)));
+        	answerGrid[0][i] = temp;
+        	answerPanel.add(answerGrid[0][i]);
+        }
+        
+        JLabel jLabel5 = new JLabel();
+        JLabel jLabel6 = new JLabel("Score: ");
+        JLabel jLabel7 = new JLabel("Round: ");
+        jLabel5.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel5.setText("Sequential History Finder");
+        jLabel5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(frame.getContentPane());
+        frame.getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGap(38, 38, 38)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(gridPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(answerPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(resetButton, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(submitButton, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(noAnswerButton, javax.swing.GroupLayout.Alignment.TRAILING))
+                                .addComponent(newButton, javax.swing.GroupLayout.Alignment.TRAILING))
+                            .addComponent(solveButton, javax.swing.GroupLayout.Alignment.TRAILING)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(127, 127, 127)
+                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.TRAILING))))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gridPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
+                            .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(solveButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(newButton)
+                        .addGap(56, 56, 56)))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(resetButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(submitButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(noAnswerButton))
+                    .addComponent(answerPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(22, 22, 22))
+        );
+
+        frame.pack();
+        frame.setVisible(true);
+    }// </editor-fold> 
 
 	public static ArrayList<Process> makeGame() {
 		ArrayList<Event> EventsArr = new ArrayList<Event>();
 
 		Event tempEve1 = new Event("Write", 3, 0, "x", 0);
 		Event tempEve2 = new Event("Write", 4, 1, "x", 0);
+		Event tempEve3 = new Event("Write", 5, 2, "y", 0);
 		EventsArr.add(tempEve1);
 		EventsArr.add(tempEve2);
+		EventsArr.add(tempEve3);
 		Process P1 = new Process(EventsArr, 0);
 
 		ArrayList<Event> EventsArr2 = new ArrayList<Event>();
@@ -316,13 +410,9 @@ public class Game extends JLayeredPane {
 
 	public static void main(String[] args) {
 		final ArrayList<Process> game = makeGame();
-
+		Game g = new Game(game);
 		Round r = new Round(game);
 		System.out.println(r.checkSCPossible());
-		java.awt.EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				createAndShowUI(game);
-			}
-		});
+
 	}
 }
