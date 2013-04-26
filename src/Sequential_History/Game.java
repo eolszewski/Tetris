@@ -26,33 +26,66 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 public class Game {
-	public int WIDTH = 0, HEIGHT = 0;
-	private int NUM_EVENTS = 0, MAX_P_EVENTS = 0, NUM_PROCESSES = 0;
+	private int NUM_EVENTS, MAX_P_EVENTS, NUM_PROCESSES;
 	private JPanel[][] processGrid;
 	private JPanel[][] answerGrid;
 	private JPanel gridPanel;
 	private JPanel answerPanel;
+	private JPanel labelPanel;
+	private JLabel scoreLabel;
 	private JButton submitButton = new JButton("Submit");
 	private JButton resetButton = new JButton("Reset");
 	private JButton noAnswerButton = new JButton("No History");
 	private JButton newButton = new JButton("New Round");
 	private JButton solveButton = new JButton("Solve");
+	private Color[] colors = {new Color(150, 200, 255), new Color (255, 200, 150), new Color (255, 150, 200)};
 	static JFrame frame = null;
 	private ArrayList<Process> processes;
+	private ArrayList<Round> rounds;
 	private HashMap<JLabel, Event> home;
+	private int roundNum, score;
+	private boolean solved;
     
-	public Game(final ArrayList<Process> p) {
-		processes = p;
+	public Game(final ArrayList<Round> r) {
+		rounds = r;
+        frame = new JFrame("Sequential History Finder!");
+        frame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        roundNum = 0;
+        score = 0;
+        startRound(0);
+		addListeners();
+	}
+	
+	private void startRound(int i) {
+		processes = rounds.get(i).getProcesses();
+        gridPanel = new javax.swing.JPanel();
+        labelPanel = new javax.swing.JPanel();
+        answerPanel = new javax.swing.JPanel();
+        solved = false;
 		initComponents();
 		addEvents();
-		addListeners();
+		frame.getContentPane().repaint();
 		MyMouseAdapter myMouseAdapter = new MyMouseAdapter();
 		frame.getContentPane().addMouseListener(myMouseAdapter);
 		frame.getContentPane().addMouseMotionListener(myMouseAdapter);
-		
-		
 	}
 
+	private JLabel eventLabel(Event e) {
+		String s = "";
+		if (e.getAction().equals("Read")) {
+			s = "<html>Read(" + e.getVariable() + ") = " + e.getValue() + "<br><br> event " + e.getEventID() + "</html>";
+		} else {
+			s = "<html>Write(" + e.getVariable() + ", " + e.getValue() + ")<br><br> event " + e.getEventID() + "</html>";
+		}
+		JLabel label = new JLabel(s, SwingConstants.CENTER);
+		//JLabel label = new JLabel(e.getAction() + " " + e.getVariable() + " " + e.getValue(), SwingConstants.CENTER);
+		//label.setPreferredSize(new Dimension(100,100));
+		label.setOpaque(true);
+		label.setBackground(colors[e.getProcessID()]);
+		return label;
+	}
+	
 	private void addEvents() {
 		home = new HashMap<JLabel, Event>();
 		for (int i = 0; i < NUM_PROCESSES; i++) {
@@ -60,9 +93,7 @@ public class Game {
 			ArrayList<Event> events = p.getEvents();
 			for (int j = 0; j < events.size(); j++) {
 				Event e = events.get(j);
-				JLabel label = new JLabel(e.getAction() + " " + e.getVariable() + " " + e.getValue(), SwingConstants.CENTER);
-				label.setOpaque(true);
-				label.setBackground(new Color(255,255,255));
+				JLabel label = eventLabel(e);
 				home.put(label, e);
 				processGrid[i][j].add(label);
 			}
@@ -86,21 +117,25 @@ public class Game {
 		submitButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				ArrayList<Event> answer = getAnswer();
-				if(answer.size() != NUM_EVENTS)
+				if (answer.size() != NUM_EVENTS) {
 					JOptionPane.showMessageDialog(null,
 							"Please add all events to this history", "Error",
 							JOptionPane.ERROR_MESSAGE);
-				else
-				{
-					Round r = new Round(processes, answer);
-					if (!r.checkUserAnswer())
+				} else {
+					if (!rounds.get(roundNum).checkUserAnswer(answer)) {
 						JOptionPane.showMessageDialog(null,
 								"This is not a sequential history", "Wrong!",
 								JOptionPane.ERROR_MESSAGE);
-					else
+					} else {
+						if (solved == false) {
+							score++;
+							scoreLabel.setText("Score: " + score);
+							solved = true;
+						}
 						JOptionPane.showMessageDialog(null,
 								"This is a valid sequential history", "Correct!",
 								JOptionPane.INFORMATION_MESSAGE);
+					}
 				}
 			}
 		});
@@ -108,14 +143,20 @@ public class Game {
 		noAnswerButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Round r = new Round(processes);
-				if (r.checkSCPossible())
+				if (r.checkSCPossible()) {
 					JOptionPane.showMessageDialog(null,
 							"There exists a sequential history", "Wrong!",
 							JOptionPane.ERROR_MESSAGE);
-				else
+				} else {
+					if (solved == false) {
+						score++;
+						scoreLabel.setText("Score: " + score);
+						solved = true;
+					}
 					JOptionPane.showMessageDialog(null,
 							"There does not exist a sequential history",
 							"Correct!", JOptionPane.INFORMATION_MESSAGE);
+				}
 			}
 		});
 		
@@ -135,7 +176,64 @@ public class Game {
 			}
 		});
 		
+		newButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				roundNum++;
+				if (roundNum < rounds.size()) {
+					startRound(roundNum);
+				} else {
+					Object[] options = { "Restart game", "Return", "Quit" };
+					int selectedValue = JOptionPane.showOptionDialog(null,
+							"Done!  Your score was: " + score + "/5",
+							"Done", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[2]);
+					if (selectedValue == 0) {
+						score = 0;
+						roundNum = 0;
+						startRound(0);
+					} else if (selectedValue == 2) {
+						System.exit(0);
+					}
+				}
+			}
+		});
 		
+		solveButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				solved = true;
+				ArrayList<Event> answer = rounds.get(roundNum).findSequentialHistory();
+				if (answer == null) {
+					JOptionPane.showMessageDialog(null,
+							"There is no sequential history possible",
+							"No Solution", JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					//System.out.println(answer);
+					clearGrid();
+					paintSolution(answer);
+				}
+			}
+		});
+	}
+	
+	private void clearGrid() {
+		for (int i = 0; i < NUM_PROCESSES; i++) {
+			for (int j = 0; j < MAX_P_EVENTS; j++) {
+				processGrid[i][j].removeAll();
+			}
+		}
+		gridPanel.revalidate();
+		frame.getContentPane().repaint();
+		
+	}
+	
+	private void paintSolution(ArrayList<Event> answer) {
+		for (int i = 0; i < NUM_EVENTS; i++) {
+			Event e = answer.get(i);
+			JLabel label = eventLabel(e);
+			home.put(label, e);
+			answerGrid[0][i].removeAll();
+			answerGrid[0][i].add(label);
+		}
+		answerPanel.revalidate();
 	}
 
 	private class MyMouseAdapter extends MouseAdapter {
@@ -240,18 +338,20 @@ public class Game {
 	}
 	
 	private void initComponents() {
-        gridPanel = new javax.swing.JPanel();
-        JPanel jPanel11 = new javax.swing.JPanel();
-        answerPanel = new javax.swing.JPanel();
-        
-        
-        frame = new JFrame("Sequential History Finder!");
-        frame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        frame.setLocationRelativeTo(null);
+		NUM_PROCESSES = processes.size();
+        MAX_P_EVENTS = 0;
+        NUM_EVENTS = 0;
         frame.setContentPane(new JLayeredPane());
-        NUM_PROCESSES = processes.size();
         
-        jPanel11.setLayout(new java.awt.GridLayout(NUM_PROCESSES, 0));
+        JLabel jLabel5 = new JLabel();
+        scoreLabel = new JLabel("Score: " + score);
+        JLabel jLabel7 = new JLabel("Round: " + (roundNum + 1));
+        jLabel5.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel5.setText("Sequential History Finder");
+        jLabel5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        
+        labelPanel.setLayout(new java.awt.GridLayout(NUM_PROCESSES, 0));
         
         for (Process p : processes) {
         	if (p.getEvents().size() > MAX_P_EVENTS) {
@@ -264,7 +364,7 @@ public class Game {
         processGrid = new JPanel[NUM_PROCESSES][MAX_P_EVENTS];
         
         for (int i = 0; i< NUM_PROCESSES; i++) {
-        	jPanel11.add(new JLabel("Process " + (i + 1), SwingConstants.CENTER));
+        	labelPanel.add(new JLabel("Process " + (i + 1), SwingConstants.CENTER));
         	for (int j = 0; j < MAX_P_EVENTS; j++) {
         		JPanel temp = new JPanel(new GridBagLayout());
         		temp.setPreferredSize(new Dimension(70,70));
@@ -298,20 +398,11 @@ public class Game {
         	if (i == 0) {
         		left = 1;
         	}
-        	temp.setPreferredSize(new Dimension(70,70));
+        	temp.setPreferredSize(new Dimension(85,70));
         	temp.setBorder(BorderFactory.createMatteBorder(1, left, 1, 1, new Color(0, 0, 0)));
         	answerGrid[0][i] = temp;
         	answerPanel.add(answerGrid[0][i]);
         }
-        
-        JLabel jLabel5 = new JLabel();
-        JLabel jLabel6 = new JLabel("Score: ");
-        JLabel jLabel7 = new JLabel("Round: ");
-        jLabel5.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel5.setText("Sequential History Finder");
-        jLabel5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(frame.getContentPane());
         frame.getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -322,7 +413,7 @@ public class Game {
                         .addGap(38, 38, 38)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(labelPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(gridPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addComponent(answerPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -341,7 +432,7 @@ public class Game {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.TRAILING))))
+                            .addComponent(scoreLabel, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -354,9 +445,9 @@ public class Game {
                         .addGap(28, 28, 28)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gridPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
-                            .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(labelPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel6)
+                        .addComponent(scoreLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel7)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -378,41 +469,48 @@ public class Game {
 
         frame.pack();
         frame.setVisible(true);
-    }// </editor-fold> 
+	}
+	
 
-	public static ArrayList<Process> makeGame() {
-		ArrayList<Event> EventsArr = new ArrayList<Event>();
+	public static ArrayList<Round> makeGame() {		
+		ArrayList<Round> rounds = new ArrayList<Round>();
+		Process p1 = new Process(0);
+		p1.addEvent("Write", "x", 3);
+		p1.addEvent("Write", "x", 4);
+		p1.addEvent("Write", "y", 5);
+		
+		Process p2 = new Process(1);
+		p2.addEvent("Read", "x", 4);
+		p2.addEvent("Read", "y", 5);
 
-		Event tempEve1 = new Event("Write", 3, 0, "x", 0);
-		Event tempEve2 = new Event("Write", 4, 1, "x", 0);
-		Event tempEve3 = new Event("Write", 5, 2, "y", 0);
-		EventsArr.add(tempEve1);
-		EventsArr.add(tempEve2);
-		EventsArr.add(tempEve3);
-		Process P1 = new Process(EventsArr, 0);
+		Process p3 = new Process(2);
+		p3.addEvent("Read", "x", 3);
+		p3.addEvent("Write", "x", 10);
+		ArrayList<Process> processesArr = new ArrayList<Process>();
+		processesArr.add(p1);
+		processesArr.add(p2);
+		processesArr.add(p3);
 
-		ArrayList<Event> EventsArr2 = new ArrayList<Event>();
-		Event tempEve4 = new Event("Read", 4, 0, "x", 1);
-		EventsArr2.add(tempEve4);
-		Process P2 = new Process(EventsArr2, 1);
-
-		ArrayList<Event> EventsArr3 = new ArrayList<Event>();
-		Event tempEve6 = new Event("Read", 3, 0, "x", 2);
-		EventsArr3.add(tempEve6);
-		Process P3 = new Process(EventsArr3, 2);
-		ArrayList<Process> ProcessesArr = new ArrayList<Process>();
-		ProcessesArr.add(P1);
-		ProcessesArr.add(P2);
-		ProcessesArr.add(P3);
-
-		return ProcessesArr;
+		rounds.add(new Round(processesArr));
+		
+		p1 = new Process(0);
+		p1.addEvent("Write", "x", 4);
+		p1.addEvent("Write", "x", 3);
+		
+		p2 = new Process(1);
+		p2.addEvent("Read", "x", 3);
+		p2.addEvent("Read", "x", 4);
+		processesArr = new ArrayList<Process>();
+		processesArr.add(p1);
+		processesArr.add(p2);
+		rounds.add(new Round(processesArr));
+		
+		return rounds;
 	}
 
 	public static void main(String[] args) {
-		final ArrayList<Process> game = makeGame();
-		Game g = new Game(game);
-		Round r = new Round(game);
-		System.out.println(r.checkSCPossible());
+		final ArrayList<Round> rounds = makeGame();
+		Game g = new Game(rounds);
 
 	}
 }

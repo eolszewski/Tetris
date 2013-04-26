@@ -22,14 +22,14 @@ public class Round {
 	public Round(ArrayList<Process> Processes) {
 		this.Processes = Processes;
 	}
-
+	
 	public ArrayList<Process> getProcesses() { return Processes; }
 	public void setProcesses(ArrayList<Process> processes) { Processes = processes; }
 	
 	//preconditions: assume event IDs start at 0,1,2...
-	public boolean checkUserAnswer() { 
+	public boolean checkUserAnswer(ArrayList<Event> answer) { 
 		int[] eventID = new int[Processes.size()];  		//initially everything 0
-		for (Event e : UserAnswer) {
+		for (Event e : answer) {
 			if (e.getEventID() == eventID[e.getProcessID()]) {
 				eventID[e.getProcessID()]++;
 			} else {
@@ -39,7 +39,7 @@ public class Round {
 		//System.out.println("Hello");
 		HashMap <String, Integer> cache = new HashMap<String, Integer> ();
 		//cache.
-		for(Event e: UserAnswer){
+		for(Event e: answer){
 			//System.out.println(e);
 			if(e.getAction().equals("Write")){
 				cache.put(e.getVariable(), e.getValue());
@@ -61,36 +61,46 @@ public class Round {
 
 	}
 	
-	public boolean checkSCPossible() {
-		//save previous state of userAnswer into tempAnswer (IF NEEDED)
-		ArrayList<Event> tempAnswer = new ArrayList<Event>();
-		for(Event e: this.UserAnswer){
-			tempAnswer.add(e);
-		}
-		
-		ArrayList<Event> Answer = new ArrayList<Event>();
+	public ArrayList<Event> findSequentialHistory() {
+		ArrayList<Event> events = new ArrayList<Event>();
 		for (int i = 0; i < Processes.size(); i++){
-			for(int j = 0; j < Processes.get(i).Events.size(); j++){
-				Answer.add(Processes.get(i).Events.get(j));
+			for(int j = 0; j < Processes.get(i).events.size(); j++){
+				events.add(Processes.get(i).events.get(j));
 			}
 		}
 		
-		ICombinatoricsVector<Event> seq = Factory.createVector(Answer);
+		ICombinatoricsVector<Event> seq = Factory.createVector(events);
+		Generator<Event> gen = Factory.createPermutationGenerator(seq);
+		
+		for (ICombinatoricsVector<Event> perm : gen){
+			ArrayList<Event> poss = (ArrayList<Event>) perm.getVector();
+			if(checkUserAnswer(poss) == true)
+				return poss;
+		}
+		
+		return null;
+		
+	}
+	
+	public boolean checkSCPossible() {
+		
+		ArrayList<Event> answer = new ArrayList<Event>();
+		for (int i = 0; i < Processes.size(); i++){
+			for(int j = 0; j < Processes.get(i).events.size(); j++){
+				answer.add(Processes.get(i).events.get(j));
+			}
+		}
+		
+		ICombinatoricsVector<Event> seq = Factory.createVector(answer);
 		Generator<Event> gen = Factory.createPermutationGenerator(seq);
 
 		for (ICombinatoricsVector<Event> perm : gen){
-			this.UserAnswer = (ArrayList<Event>) perm.getVector();
-			if(this.checkUserAnswer() == true)
+			if(checkUserAnswer((ArrayList<Event>) perm.getVector()) == true)
 				return true;
-		}
-
-		//return previous state of UserAnswer (IF NEEDED)
-		this.UserAnswer.clear();
-		for(Event e: tempAnswer){
-			this.UserAnswer.add(e);
 		}
 
 		return false;
 	}
+	
 	public void setUserAnswer(ArrayList<Event> userAnswer) { UserAnswer = userAnswer; }
 }
